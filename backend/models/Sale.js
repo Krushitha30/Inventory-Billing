@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const saleSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   customerName: { type: String, default: "Walk-in Customer" },
   items: Array,
   subtotal: Number,

@@ -463,13 +463,8 @@ function Billing() {
       triggerPrint();
 
       // Reset Billing Station
-      setTimeout(() => {
-        setItems([]);
-        setCustomer("");
-        // Final Sync: Reload the page to ensure all Dashboard charts 
-        // re-fetch the newly recorded sale data from the cloud.
-        window.location.reload();
-      }, 1500);
+      setItems([]);
+      setCustomer("");
       
       alert("✅ Sale recorded and stock updated!");
     } catch (err) {
