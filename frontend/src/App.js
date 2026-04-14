@@ -2,36 +2,46 @@ import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
 import "./App.css";
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
+import API_URL from "./apiConfig";
 import { useReactToPrint } from "react-to-print";
 import Invoice from "./components/Invoice";
 import { jwtDecode } from "jwt-decode";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale, LineElement, PointElement } from 'chart.js';
 import { Doughnut, Bar, Line } from 'react-chartjs-2';
-import Login from "./pages/Login";
+import Login from "./pages/Login"; // Keep for fallback or decommission
 import Signup from "./pages/Signup";
 import Customers from "./pages/Customers";
 import Suppliers from "./pages/Suppliers";
 import Profile from "./pages/Profile";
 import SalesLedger from "./pages/SalesLedger";
+import LandingPage from "./pages/LandingPage";
+import AdminLogin from "./pages/AdminLogin";
+import UserLogin from "./pages/UserLogin";
+import AdminDashboard from "./pages/AdminDashboard";
+import UserReviews from "./pages/UserReviews";
+import Assistance from "./pages/Assistance";
+import SupportWidget from "./components/SupportWidget";
 
-ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale, LineElement, PointElement);
-
-// Setup Axios Interceptor
-axios.interceptors.request.use(config => {
+// Global Security Interceptor: Automatically attach Token to every request
+axios.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
+
+ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale, LineElement, PointElement);
 
 function Dashboard() {
   const [data, setData] = useState([]);
   const [salesData, setSalesData] = useState([]);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/products").then(res => setData(res.data));
-    axios.get("http://localhost:5000/api/sales").then(res => setSalesData(res.data));
+    axios.get(`${API_URL}/api/products`).then(res => setData(res.data));
+    axios.get(`${API_URL}/api/sales`).then(res => setSalesData(res.data));
   }, []);
 
   const totalProducts = data.length;
@@ -80,7 +90,7 @@ function Dashboard() {
     }]
   };
 
-  const sortedSales = [...salesData].sort((a,b) => new Date(a.date) - new Date(b.date));
+  const sortedSales = [...salesData].sort((a, b) => new Date(a.date) - new Date(b.date));
   const sortedSalesByDate = {};
   sortedSales.forEach(sale => {
     const dateString = new Date(sale.date).toLocaleDateString({ month: 'short', day: 'numeric' });
@@ -210,7 +220,7 @@ function Products({ role }) {
   const [search, setSearch] = useState("");
 
   const fetchProducts = async () => {
-    const res = await axios.get("http://localhost:5000/api/products");
+    const res = await axios.get(`${API_URL}/api/products`);
     setData(res.data);
   };
 
@@ -223,12 +233,12 @@ function Products({ role }) {
 
     if (editId) {
       await axios.put(
-        `http://localhost:5000/api/products/${editId}`,
+        `${API_URL}/api/products/${editId}`,
         form
       );
       setEditId(null);
     } else {
-      await axios.post("http://localhost:5000/api/products", form);
+      await axios.post(`${API_URL}/api/products`, form);
     }
 
     setForm({ name: "", price: "", costPrice: "", quantity: "", category: "General", imageUrl: "" });
@@ -241,7 +251,7 @@ function Products({ role }) {
   };
 
   const deleteProduct = async (id) => {
-    await axios.delete(`http://localhost:5000/api/products/${id}`);
+    await axios.delete(`${API_URL}/api/products/${id}`);
     fetchProducts();
   };
 
@@ -307,61 +317,60 @@ function Products({ role }) {
       </div>
 
       <div className="overflow-x-auto w-full">
-      <table className="w-full border min-w-[700px] text-gray-800 dark:text-gray-200">
-        <thead className="bg-gray-200 dark:bg-gray-700">
-          <tr>
-            <th className="py-2">Image</th>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Cost Price</th>
-            <th>Selling Price</th>
-            <th>Profit/Item</th>
-            <th>Qty</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map((p) => (
-            <tr
-              key={p._id}
-              className={`text-center border-t dark:border-gray-600 ${
-                p.quantity < 5 ? "bg-red-50 dark:bg-red-900" : "hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-              }`}
-            >
-              <td className="py-2">
-                {p.imageUrl ? (
-                  <img src={p.imageUrl} alt={p.name} className="h-10 w-10 object-cover rounded-md mx-auto shadow-sm" />
-                ) : (
-                  <div className="h-10 w-10 bg-gray-100 dark:bg-gray-600 rounded-md flex items-center justify-center text-[10px] text-gray-400 mx-auto">N/A</div>
-                )}
-              </td>
-              <td className="font-semibold">{p.name}</td>
-              <td><span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded-full text-xs font-bold">{p.category || 'General'}</span></td>
-              <td>₹{p.costPrice || 0}</td>
-              <td>₹{p.price}</td>
-              <td className="text-green-600 dark:text-green-400 font-bold">₹{((p.price || 0) - (p.costPrice || 0))}</td>
-              <td className="font-bold">{p.quantity}</td>
-              <td className="space-x-2">
-                <button
-                  onClick={() => editProduct(p)}
-                  className="bg-yellow-400 px-2 py-1 rounded"
-                >
-                  Edit
-                </button>
-
-                {role === 'admin' && (
-                  <button
-                    onClick={() => deleteProduct(p._id)}
-                    className="bg-red-500 text-white px-2 py-1 rounded"
-                  >
-                    Delete
-                  </button>
-                )}
-              </td>
+        <table className="w-full border min-w-[700px] text-gray-800 dark:text-gray-200">
+          <thead className="bg-gray-200 dark:bg-gray-700">
+            <tr>
+              <th className="py-2">Image</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Cost Price</th>
+              <th>Selling Price</th>
+              <th>Profit/Item</th>
+              <th>Qty</th>
+              <th>Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filtered.map((p) => (
+              <tr
+                key={p._id}
+                className={`text-center border-t dark:border-gray-600 ${p.quantity < 5 ? "bg-red-50 dark:bg-red-900" : "hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                  }`}
+              >
+                <td className="py-2">
+                  {p.imageUrl ? (
+                    <img src={p.imageUrl} alt={p.name} className="h-10 w-10 object-cover rounded-md mx-auto shadow-sm" />
+                  ) : (
+                    <div className="h-10 w-10 bg-gray-100 dark:bg-gray-600 rounded-md flex items-center justify-center text-[10px] text-gray-400 mx-auto">N/A</div>
+                  )}
+                </td>
+                <td className="font-semibold">{p.name}</td>
+                <td><span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded-full text-xs font-bold">{p.category || 'General'}</span></td>
+                <td>₹{p.costPrice || 0}</td>
+                <td>₹{p.price}</td>
+                <td className="text-green-600 dark:text-green-400 font-bold">₹{((p.price || 0) - (p.costPrice || 0))}</td>
+                <td className="font-bold">{p.quantity}</td>
+                <td className="space-x-2">
+                  <button
+                    onClick={() => editProduct(p)}
+                    className="bg-yellow-400 px-2 py-1 rounded"
+                  >
+                    Edit
+                  </button>
+
+                  {role === 'admin' && (
+                    <button
+                      onClick={() => deleteProduct(p._id)}
+                      className="bg-red-500 text-white px-2 py-1 rounded"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -383,8 +392,9 @@ function Billing() {
   });
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/products")
-      .then(res => setProducts(res.data));
+    axios.get(`${API_URL}/api/products`)
+      .then(res => setProducts(res.data))
+      .catch(err => console.error("Failed to load products for billing:", err));
   }, []);
 
   const addItem = async () => {
@@ -393,34 +403,38 @@ function Billing() {
 
     const requestedQty = Number(qty);
     if (requestedQty <= 0) return alert("Please enter a valid quantity.");
-    
+
     if (requestedQty > product.quantity) {
       return alert(`Not enough stock! Only ${product.quantity} left.`);
     }
 
-    const newItem = {
-      _id: product._id,
-      name: product.name,
-      price: product.price,
-      qty: requestedQty,
-      imageUrl: product.imageUrl
-    };
+    try {
+      // 1. Try to update backend stock first
+      await axios.put(
+        `${API_URL}/api/products/reduce/${product._id}`,
+        { qty: requestedQty }
+      );
 
-    setItems([...items, newItem]);
+      // 2. If backend succeeds, update local UI state
+      const newItem = {
+        _id: product._id,
+        name: product.name,
+        price: product.price,
+        qty: requestedQty,
+        imageUrl: product.imageUrl
+      };
 
-    // Update local products state so we don't oversell in the same session
-    const updatedProducts = products.map(p => 
-      p._id === product._id ? { ...p, quantity: p.quantity - requestedQty } : p
-    );
-    setProducts(updatedProducts);
-
-    await axios.put(
-      `http://localhost:5000/api/products/reduce/${product._id}`,
-      { qty: requestedQty }
-    );
-
-    setQty(1);
-    setSelected("");
+      setItems([...items, newItem]);
+      const updatedProducts = products.map(p =>
+        p._id === product._id ? { ...p, quantity: p.quantity - requestedQty } : p
+      );
+      setProducts(updatedProducts);
+      setQty(1);
+      setSelected("");
+    } catch (err) {
+      console.error("Stock reduction failed:", err);
+      alert("⚠️ Stock Update Failed: " + (err.response?.data?.error || "Connection error. Make sure you are logged in."));
+    }
   };
 
   const subtotal = items.reduce(
@@ -432,24 +446,36 @@ function Billing() {
   const total = subtotal + gst;
 
   const completeCheckout = async () => {
-    // Save transaction to Ledger
-    await axios.post("http://localhost:5000/api/sales", {
-      customerName: customer || "Walk-in Customer",
-      items,
-      subtotal,
-      gst,
-      total,
-      invoiceNumber: Math.floor(Math.random() * 90000) + 10000
-    });
+    if (items.length === 0) return alert("Please add at least one item.");
 
-    // Fire PDF popup
-    triggerPrint();
+    try {
+      // Save transaction to Ledger
+      await axios.post(`${API_URL}/api/sales`, {
+        customerName: customer || "Walk-in Customer",
+        items,
+        subtotal,
+        gst,
+        total,
+        invoiceNumber: Math.floor(Math.random() * 90000) + 10000
+      });
 
-    // Reset Billing Station
-    setTimeout(() => {
-      setItems([]);
-      setCustomer("");
-    }, 2000);
+      // Fire PDF popup
+      triggerPrint();
+
+      // Reset Billing Station
+      setTimeout(() => {
+        setItems([]);
+        setCustomer("");
+        // Final Sync: Reload the page to ensure all Dashboard charts 
+        // re-fetch the newly recorded sale data from the cloud.
+        window.location.reload();
+      }, 1500);
+      
+      alert("✅ Sale recorded and stock updated!");
+    } catch (err) {
+      console.error("Checkout failed:", err);
+      alert("❌ Checkout Failed: " + (err.response?.data?.error || "Could not save sale to ledger. Check your connection."));
+    }
   };
 
   return (
@@ -504,46 +530,46 @@ function Billing() {
       </div>
 
       <div style={{ position: "absolute", top: "-10000px", left: "-10000px" }}>
-        <Invoice 
+        <Invoice
           ref={invoiceRef}
-          customerName={customer} 
-          items={items} 
-          subtotal={subtotal} 
-          gst={gst} 
-          total={total} 
-          invoiceNumber={Math.floor(Math.random() * 90000) + 10000} 
+          customerName={customer}
+          items={items}
+          subtotal={subtotal}
+          gst={gst}
+          total={total}
+          invoiceNumber={Math.floor(Math.random() * 90000) + 10000}
         />
       </div>
 
       <div className="overflow-x-auto w-full">
-      <table className="w-full border min-w-[500px] text-gray-800 dark:text-gray-200">
-        <thead className="bg-gray-200 dark:bg-gray-700">
-          <tr>
-            <th className="py-2">Image</th>
-            <th>Item</th>
-            <th>Price</th>
-            <th>Qty</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item, i) => (
-            <tr key={i} className="text-center border-t dark:border-gray-600">
-              <td className="py-2">
-                {item.imageUrl ? (
-                  <img src={item.imageUrl} alt={item.name} className="h-10 w-10 object-cover rounded-md mx-auto shadow-sm" />
-                ) : (
-                  <div className="h-10 w-10 bg-gray-100 dark:bg-gray-600 rounded-md flex items-center justify-center text-[10px] text-gray-400 mx-auto">N/A</div>
-                )}
-              </td>
-              <td className="font-semibold">{item.name}</td>
-              <td>₹{item.price}</td>
-              <td>{item.qty}</td>
-              <td className="font-bold">₹{item.price * item.qty}</td>
+        <table className="w-full border min-w-[500px] text-gray-800 dark:text-gray-200">
+          <thead className="bg-gray-200 dark:bg-gray-700">
+            <tr>
+              <th className="py-2">Image</th>
+              <th>Item</th>
+              <th>Price</th>
+              <th>Qty</th>
+              <th>Total</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {items.map((item, i) => (
+              <tr key={i} className="text-center border-t dark:border-gray-600">
+                <td className="py-2">
+                  {item.imageUrl ? (
+                    <img src={item.imageUrl} alt={item.name} className="h-10 w-10 object-cover rounded-md mx-auto shadow-sm" />
+                  ) : (
+                    <div className="h-10 w-10 bg-gray-100 dark:bg-gray-600 rounded-md flex items-center justify-center text-[10px] text-gray-400 mx-auto">N/A</div>
+                  )}
+                </td>
+                <td className="font-semibold">{item.name}</td>
+                <td>₹{item.price}</td>
+                <td>{item.qty}</td>
+                <td className="font-bold">₹{item.price * item.qty}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <div className="mt-4 font-bold">
@@ -558,99 +584,129 @@ function Billing() {
 function App() {
   const token = localStorage.getItem("token");
   const [darkMode, setDarkMode] = useState(false);
-  let role = "staff";
+  let role = "user";
   let name = "";
-  
+
   if (token) {
     try {
       const decoded = jwtDecode(token);
       role = decoded.role;
       name = decoded.name || "User";
-    } catch(err) {}
+    } catch (err) { }
   }
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   return (
     <div className={darkMode ? 'dark' : ''}>
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        
-        <Route path="/*" element={
-          token ? (
-            <div className="flex flex-col md:flex-row min-h-screen bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 dark:text-gray-200 transition-colors duration-300">
-              {/* Sidebar */}
-              <div className="w-full md:w-64 bg-white dark:bg-gray-800 shadow-xl p-6 flex flex-col justify-between transition-colors duration-300 border-r dark:border-gray-700">
-                <div>
-                  <div className="flex justify-between items-center mb-8">
-                    <h2 className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                      Inventory
-                    </h2>
-                    <button onClick={() => setDarkMode(!darkMode)} className="text-xl bg-gray-100 dark:bg-gray-700 p-2 rounded-full cursor-pointer hover:scale-110 transition">
-                      {darkMode ? '☀️' : '🌙'}
+      <BrowserRouter>
+        <SupportWidget />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/login/admin" element={<AdminLogin />} />
+          <Route path="/login/user" element={<UserLogin />} />
+          <Route path="/signup" element={<Signup />} />
+
+          <Route path="/*" element={
+            token ? (
+              <div className={`flex flex-col md:flex-row min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gray-950 text-gray-200 dark' : 'bg-slate-50 text-slate-900'}`}>
+                {/* Sidebar */}
+                <div className={`w-full md:w-72 shadow-2xl p-8 flex flex-col justify-between transition-all duration-300 border-r ${darkMode ? 'bg-gray-900 border-white/5' : 'bg-white border-slate-200'}`}>
+                  <div>
+                    <div className="flex justify-between items-center mb-8">
+                      <h2 className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        Inventory
+                      </h2>
+                      <button onClick={() => setDarkMode(!darkMode)} className="text-xl bg-gray-100 dark:bg-gray-700 p-2 rounded-full cursor-pointer hover:scale-110 transition">
+                        {darkMode ? '☀️' : '🌙'}
+                      </button>
+                    </div>
+
+                    <ul className="space-y-2 flex flex-row flex-wrap md:flex-col gap-x-4 md:gap-x-0">
+                      <li>
+                        <Link to="/dashboard" className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-bold transition-all group ${darkMode ? 'hover:bg-blue-600/10 hover:text-blue-400' : 'hover:bg-blue-50 hover:text-blue-600'}`}>
+                          <span className="group-hover:scale-110 transition-transform">{role === 'admin' ? '📊 Analytics' : '🏠 Dashboard'}</span>
+                        </Link>
+                      </li>
+                      {(role === 'user' || role === 'staff') && (
+                        <>
+                          <li>
+                            <Link to="/products" className={`font-bold transition-all px-4 py-3 rounded-2xl flex items-center gap-3 group ${darkMode ? 'hover:bg-blue-600/10 hover:text-blue-400' : 'hover:bg-blue-50 hover:text-blue-600' }`}>📦 Products</Link>
+                          </li>
+                          <li>
+                            <Link to="/billing" className={`font-bold transition-all px-4 py-3 rounded-2xl flex items-center gap-3 group ${darkMode ? 'hover:bg-blue-600/10 hover:text-blue-400' : 'hover:bg-blue-50 hover:text-blue-600' }`}>🧾 Billing</Link>
+                          </li>
+                          <li>
+                            <Link to="/customers" className={`font-bold transition-all px-4 py-3 rounded-2xl flex items-center gap-3 group ${darkMode ? 'hover:bg-blue-600/10 hover:text-blue-400' : 'hover:bg-blue-50 hover:text-blue-600' }`}>👥 Customers</Link>
+                          </li>
+                          <li>
+                            <Link to="/suppliers" className={`font-bold transition-all px-4 py-3 rounded-2xl flex items-center gap-3 group ${darkMode ? 'hover:bg-blue-600/10 hover:text-blue-400' : 'hover:bg-blue-50 hover:text-blue-600' }`}>🏭 Suppliers</Link>
+                          </li>
+                          <li>
+                            <Link to="/ledger" className={`font-bold transition-all px-4 py-3 rounded-2xl flex items-center gap-3 group ${darkMode ? 'hover:bg-blue-600/10 hover:text-blue-400' : 'hover:bg-blue-50 hover:text-blue-600' }`}>📋 Sales Ledger</Link>
+                          </li>
+                          <li>
+                            <Link to="/assistance" className={`font-bold transition-all px-4 py-3 rounded-2xl flex items-center gap-3 group ${darkMode ? 'hover:bg-blue-600/10 hover:text-blue-400' : 'hover:bg-blue-50 hover:text-blue-600' }`}>🆘 Assistance</Link>
+                          </li>
+                          <li>
+                            <Link to="/reviews" className={`font-bold transition-all px-4 py-3 rounded-2xl flex items-center gap-3 group ${darkMode ? 'hover:bg-blue-600/10 hover:text-blue-400' : 'hover:bg-blue-50 hover:text-blue-600' }`}>⭐ Reviews</Link>
+                          </li>
+                        </>
+                      )}
+                      {role === 'admin' && (
+                        <>
+                          <li>
+                            <Link to="/reviews" className={`font-bold transition-all px-4 py-3 rounded-2xl flex items-center gap-3 group ${darkMode ? 'hover:bg-blue-600/10 hover:text-blue-400' : 'hover:bg-blue-50 hover:text-blue-600' }`}>⭐ Reviews</Link>
+                          </li>
+                          <li>
+                            <Link to="/assistance" className={`font-bold transition-all px-4 py-3 rounded-2xl flex items-center gap-3 group ${darkMode ? 'hover:bg-blue-600/10 hover:text-blue-400' : 'hover:bg-blue-50 hover:text-blue-600' }`}>🆘 Assistance</Link>
+                          </li>
+                        </>
+                      )}
+                    </ul>
+                  </div>
+
+                  <div className={`mt-8 md:mt-0 p-6 border-t md:border-t-0 ${darkMode ? 'border-white/5' : 'border-slate-100'}`}>
+                    <div className={`mb-6 text-center md:pb-6 md:border-b ${darkMode ? 'border-white/5' : 'border-slate-100'}`}>
+                      <p className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-slate-900'}`}>Hi, {name}!</p>
+                      <p className="text-xs text-gray-500 uppercase tracking-widest mt-1 mb-4">{role === 'staff' ? 'User' : role}</p>
+                      <Link to="/profile" className={`inline-flex items-center gap-2 text-xs font-bold py-2 px-4 rounded-xl transition-all border ${darkMode ? 'bg-blue-600/10 text-blue-400 border-blue-500/20 hover:bg-blue-600/20' : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100'}`}>
+                        ⚙️ Profile Settings
+                      </Link>
+                    </div>
+                    <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white font-black text-sm uppercase tracking-widest py-4 px-4 rounded-2xl w-full transition-all shadow-lg shadow-red-500/20 active:scale-95">
+                      Logout Station
                     </button>
                   </div>
-
-                  <ul className="space-y-4 flex flex-row flex-wrap md:flex-col gap-x-4 md:gap-x-0">
-                    <li>
-                      <Link to="/" className="hover:text-blue-500 font-semibold">Dashboard</Link>
-                    </li>
-                    <li>
-                      <Link to="/products" className="hover:text-blue-500 font-semibold">Products</Link>
-                    </li>
-                    <li>
-                      <Link to="/customers" className="hover:text-blue-500 font-semibold">Customers</Link>
-                    </li>
-                    <li>
-                      <Link to="/suppliers" className="hover:text-blue-500 font-semibold">Suppliers</Link>
-                    </li>
-                    <li>
-                      <Link to="/ledger" className="hover:text-blue-500 font-semibold">Sales Ledger</Link>
-                    </li>
-                    <li>
-                      <Link to="/billing" className="hover:text-blue-500 font-semibold">Billing</Link>
-                    </li>
-                  </ul>
                 </div>
-                
-                <div className="mt-8 md:mt-0 p-4 border-t md:border-t-0 border-gray-200 dark:border-gray-700">
-                  <div className="mb-4 text-center md:pb-4 md:border-b dark:border-gray-700">
-                    <p className="font-semibold text-gray-700">Hi, {name}!</p>
-                    <p className="text-sm text-gray-500 capitalize mb-3">Role: {role}</p>
-                    <Link to="/profile" className="text-blue-500 text-sm font-semibold hover:underline block mb-2">⚙️ My Profile Settings</Link>
-                  </div>
-                  <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded w-full transition duration-200">
-                    Logout
-                  </button>
+
+                {/* Content */}
+                <div className="flex-1 p-8 h-screen overflow-y-auto w-full transition-colors duration-300">
+                  <Routes>
+                    <Route path="/dashboard" element={role === 'admin' ? <AdminDashboard /> : <Dashboard />} />
+                    <Route path="/products" element={<Products role={role === 'staff' ? 'user' : role} />} />
+                    <Route path="/customers" element={<Customers />} />
+                    <Route path="/suppliers" element={<Suppliers />} />
+                    <Route path="/ledger" element={<SalesLedger />} />
+                    <Route path="/billing" element={<Billing />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/assistance" element={<Assistance />} />
+                    <Route path="/reviews" element={<UserReviews />} />
+                    {/* Redirect unmatched nested routes to dashboard */}
+                    <Route path="*" element={<Navigate to="/dashboard" />} />
+                  </Routes>
                 </div>
               </div>
-
-              {/* Content */}
-              <div className="flex-1 p-8 h-screen overflow-y-auto w-full transition-colors duration-300">
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/products" element={<Products role={role} />} />
-                  <Route path="/customers" element={<Customers />} />
-                  <Route path="/suppliers" element={<Suppliers />} />
-                  <Route path="/ledger" element={<SalesLedger />} />
-                  <Route path="/billing" element={<Billing />} />
-                  <Route path="/profile" element={<Profile />} />
-                  {/* Redirect unmatched nested routes to dashboard */}
-                  <Route path="*" element={<Navigate to="/" />} />
-                </Routes>
-              </div>
-            </div>
-          ) : (
-            <Navigate to="/login" />
-          )
-        } />
-      </Routes>
-    </BrowserRouter>
+            ) : (
+              <Navigate to="/" />
+            )
+          } />
+        </Routes>
+      </BrowserRouter>
     </div>
   );
 }

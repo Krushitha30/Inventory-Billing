@@ -1,51 +1,44 @@
-import axios from "axios";
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 function Login() {
-  const [data, setData] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
-
-  const login = async () => {
-    try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", data);
-      if (res.data.token) {
-        localStorage.setItem("token", res.data.token);
-        window.location.href = "/";
-      } else {
-        setError(res.data); // Display exact error from backend like "User not found"
-      }
-    } catch (err) {
-      setError("An error occurred during login.");
-    }
-  };
-
   return (
-    <div className="flex justify-center items-center h-screen bg-gradient-to-r from-blue-100 to-purple-100 p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm">
-        <h2 className="text-2xl font-bold mb-6 text-center text-blue-600">Login</h2>
+    <div className="flex justify-center items-center h-screen bg-gray-950 p-4 font-sans selection:bg-blue-500/30">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full -z-10" />
+      
+      <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8">
+        
+        {/* User Card */}
+        <Link to="/login/user" className="group relative bg-gray-900/40 backdrop-blur-xl border border-white/10 p-10 rounded-[2.5rem] overflow-hidden transition-all hover:scale-[1.02] hover:bg-gray-900/60 hover:shadow-2xl hover:shadow-blue-500/10">
+          <div className="absolute top-0 right-0 p-8 text-8xl opacity-5 group-hover:scale-110 transition-transform">📋</div>
+          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-blue-500/20">
+            <span className="text-2xl">👤</span>
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">User Portal</h2>
+          <p className="text-gray-400 leading-relaxed mb-6">Manage inventory, create invoices, and handle daily billing operations.</p>
+          <div className="inline-flex items-center gap-2 text-blue-400 font-bold group-hover:gap-4 transition-all">
+            Start Working <span>→</span>
+          </div>
+        </Link>
 
-        {error && <div className="bg-red-100 text-red-600 p-2 mb-4 rounded">{error}</div>}
+        {/* Admin Card */}
+        <Link to="/login/admin" className="group relative bg-gray-900/40 backdrop-blur-xl border border-white/10 p-10 rounded-[2.5rem] overflow-hidden transition-all hover:scale-[1.02] hover:bg-gray-900/60 hover:shadow-2xl hover:shadow-purple-500/10">
+          <div className="absolute top-0 right-0 p-8 text-8xl opacity-5 group-hover:scale-110 transition-transform">⚡</div>
+          <div className="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-purple-500/20">
+            <span className="text-2xl">🛡️</span>
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Admin Console</h2>
+          <p className="text-gray-400 leading-relaxed mb-6">Access enterprise analytics, manage users, and configure system settings.</p>
+          <div className="inline-flex items-center gap-2 text-purple-400 font-bold group-hover:gap-4 transition-all">
+            Enter Dashboard <span>→</span>
+          </div>
+        </Link>
 
-        <input placeholder="Email"
-          onChange={e=>setData({...data,email:e.target.value})}
-          className="border border-gray-300 p-3 rounded w-full mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      </div>
 
-        <input placeholder="Password" type="password"
-          onChange={e=>setData({...data,password:e.target.value})}
-          className="border border-gray-300 p-3 rounded w-full mb-6 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-
-        <button onClick={login}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold w-full p-3 rounded transition duration-200 shadow-md">
-          Login
-        </button>
-
-        <div className="mt-4 text-center">
-          <p className="text-gray-600">
-            Don't have an account? <Link to="/signup" className="text-blue-500 hover:underline">Sign up</Link>
-          </p>
-        </div>
+      <div className="fixed bottom-10 left-1/2 -translate-x-1/2">
+        <Link to="/" className="text-gray-600 text-sm hover:text-gray-400 transition-colors flex items-center gap-2">
+          <span>←</span> Back to Main Site
+        </Link>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useReactToPrint } from "react-to-print";
 import Invoice from "../components/Invoice";
+import API_URL from "../apiConfig";
 
 function SalesLedger() {
   const [sales, setSales] = useState([]);
@@ -15,7 +16,7 @@ function SalesLedger() {
   }, []);
 
   const fetchSales = async () => {
-    const res = await axios.get("http://localhost:5000/api/sales");
+    const res = await axios.get(`${API_URL}/api/sales`);
     // Sort so newest are first
     const sorted = res.data.sort((a,b) => new Date(b.date) - new Date(a.date));
     setSales(sorted);

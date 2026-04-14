@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const SECRET = "secret123";
+const SECRET = process.env.JWT_SECRET || "fallback_secret_local_only";
 
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];

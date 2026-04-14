@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import API_URL from "../apiConfig";
 
 function Customers() {
   const [data, setData] = useState([]);
@@ -8,7 +9,7 @@ function Customers() {
   const [search, setSearch] = useState("");
 
   const fetchCustomers = async () => {
-    const res = await axios.get("http://localhost:5000/api/customers");
+    const res = await axios.get(`${API_URL}/api/customers`);
     setData(res.data);
   };
 
@@ -20,10 +21,10 @@ function Customers() {
     if (!form.name) return;
 
     if (editId) {
-      await axios.put(`http://localhost:5000/api/customers/${editId}`, form);
+      await axios.put(`${API_URL}/api/customers/${editId}`, form);
       setEditId(null);
     } else {
-      await axios.post("http://localhost:5000/api/customers", form);
+      await axios.post(`${API_URL}/api/customers`, form);
     }
 
     setForm({ name: "", email: "", phone: "", address: "" });
@@ -36,7 +37,7 @@ function Customers() {
   };
 
   const deleteCustomer = async (id) => {
-    await axios.delete(`http://localhost:5000/api/customers/${id}`);
+    await axios.delete(`${API_URL}/api/customers/${id}`);
     fetchCustomers();
   };
 

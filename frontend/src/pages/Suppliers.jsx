@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import API_URL from "../apiConfig";
 
 function Suppliers() {
   const [data, setData] = useState([]);
@@ -8,7 +9,7 @@ function Suppliers() {
   const [search, setSearch] = useState("");
 
   const fetchSuppliers = async () => {
-    const res = await axios.get("http://localhost:5000/api/suppliers");
+    const res = await axios.get(`${API_URL}/api/suppliers`);
     setData(res.data);
   };
 
@@ -20,10 +21,10 @@ function Suppliers() {
     if (!form.name) return;
 
     if (editId) {
-      await axios.put(`http://localhost:5000/api/suppliers/${editId}`, form);
+      await axios.put(`${API_URL}/api/suppliers/${editId}`, form);
       setEditId(null);
     } else {
-      await axios.post("http://localhost:5000/api/suppliers", form);
+      await axios.post(`${API_URL}/api/suppliers`, form);
     }
 
     setForm({ name: "", contactPerson: "", email: "", phone: "", suppliedCategory: "General" });
@@ -36,7 +37,7 @@ function Suppliers() {
   };
 
   const deleteSupplier = async (id) => {
-    await axios.delete(`http://localhost:5000/api/suppliers/${id}`);
+    await axios.delete(`${API_URL}/api/suppliers/${id}`);
     fetchSuppliers();
   };
 
